@@ -1,6 +1,6 @@
 """
 Mask R-CNN
-Train on the toy tv dataset and implement color splash effect.
+Train on the toy logo dataset and implement color splash effect.
 
 Copyright (c) 2018 Matterport, Inc.
 Licensed under the MIT License (see LICENSE for details)
@@ -12,13 +12,13 @@ Usage: import the module (see Jupyter notebooks for examples), or run from
        the command line as such:
 
     # Train a new model starting from pre-trained COCO weights
-    python3 logo.py train --dataset=/path/to/tv/dataset --weights=coco
+    python3 logo.py train --dataset=/path/to/logo/dataset --weights=coco
 
     # Resume training a model that you had trained earlier
-    python3 logo.py train --dataset=/path/to/tv/dataset --weights=last
+    python3 logo.py train --dataset=/path/to/logo/dataset --weights=last
 
     # Train a new model starting from ImageNet weights
-    python3 logo.py train --dataset=/path/to/tv/dataset --weights=imagenet
+    python3 logo.py train --dataset=/path/to/logo/dataset --weights=imagenet
 
     # Apply color splash to an image
     python3 logo.py splash --weights=/path/to/weights/file.h5 --image=<URL or path to file>
@@ -63,19 +63,19 @@ def img_variance(img):
 
     return v_b, v_g, v_r
 
-class TvConfig(Config):
+class LogoConfig(Config):
     """Configuration for training on the toy  dataset.
     Derives from the base Config class and overrides some values.
     """
     # Give the configuration a recognizable name
-    NAME = "tv"
+    NAME = "logo"
 
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
     IMAGES_PER_GPU = 2
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 1  # Background + tv
+    NUM_CLASSES = 1 + 1  # Background + logo
 
     # Number of training steps per epoch
     STEPS_PER_EPOCH = 100
@@ -88,15 +88,15 @@ class TvConfig(Config):
 #  Dataset
 ############################################################
 
-class TvDataset(utils.Dataset):
+class LogoDataset(utils.Dataset):
 
-    def load_tv(self, dataset_dir, subset):
-        """Load a subset of the tv dataset.
+    def load_logo(self, dataset_dir, subset):
+        """Load a subset of the logo dataset.
         dataset_dir: Root directory of the dataset.
         subset: Subset to load: train or val
         """
         # Add classes. We have only one class to add.
-        self.add_class("tv", 1, "tv")
+        self.add_class("logo", 1, "logo")
 
         # Train or validation dataset?
         assert subset in ["train", "val"]
@@ -118,7 +118,7 @@ class TvDataset(utils.Dataset):
         # }
         # We mostly care about the x and y coordinates of each region
         # Note: In VIA 2.0, regions was changed from a dict to a list.
-        annotations = json.load(open(os.path.join(dataset_dir, "train_tv.json")))
+        annotations = json.load(open(os.path.join(dataset_dir, "train_logo.json")))
         annotations = list(annotations.values())  # don't need the dict keys
         # print(annotations)
 
@@ -140,9 +140,16 @@ class TvDataset(utils.Dataset):
             # print(np.array(a['shapes'][0]['points']))
             # print(np.array(a['shapes'][0]['points'])[:, 0].tolist())
 
-            polygons = [
-                {'name': a['shapes'][0]['label'], 'all_points_x': np.array(a['shapes'][0]['points'])[:, 0].tolist(),
-                 'all_points_y': np.array(a['shapes'][0]['points'])[:, 1].tolist()}]
+            # polygons = [
+            #     {'name': a['shapes'][0]['label'], 'all_points_x': np.array(a['shapes'][0]['points'])[:, 0].tolist(),
+            #      'all_points_y': np.array(a['shapes'][0]['points'])[:, 1].tolist()}]
+
+            polygons = []
+            for i in range(len(a['shapes'])):
+                polygons.append({'name': a['shapes'][i]['label'], 'all_points_x': np.array(a['shapes'][i]['points'])[:, 1].tolist(),
+                 'all_points_y': np.array(a['shapes'][i]['points'])[:, 1].tolist()})
+
+            # print(polygons)
 
             # load_mask() needs the image size to convert polygons to masks.
             # Unfortunately, VIA doesn't include it in JSON, so we must read
@@ -152,7 +159,7 @@ class TvDataset(utils.Dataset):
             height, width = image.shape[:2]
 
             self.add_image(
-                "tv",
+                "logo",
                 image_id=a['imagePath'],  # use file name as a unique image id
                 path=image_path,
                 width=width, height=height,
@@ -165,9 +172,9 @@ class TvDataset(utils.Dataset):
             one mask per instance.
         class_ids: a 1D array of class IDs of the instance masks.
         """
-        # If not a tv dataset image, delegate to parent class.
+        # If not a logo dataset image, delegate to parent class.
         image_info = self.image_info[image_id]
-        if image_info["source"] != "tv":
+        if image_info["source"] != "logo":
             return super(self.__class__, self).load_mask(image_id)
 
         # Convert polygons to a bitmap mask of shape
@@ -187,7 +194,7 @@ class TvDataset(utils.Dataset):
     def image_reference(self, image_id):
         """Return the path of the image."""
         info = self.image_info[image_id]
-        if info["source"] == "tv":
+        if info["source"] == "logo":
             return info["path"]
         else:
             super(self.__class__, self).image_reference(image_id)
@@ -196,13 +203,13 @@ class TvDataset(utils.Dataset):
 def train(model):
     """Train the model."""
     # Training dataset.
-    dataset_train = TvDataset()
-    dataset_train.load_tv(args.dataset, "train")
+    dataset_train = LogoDataset()
+    dataset_train.load_logo(args.dataset, "train")
     dataset_train.prepare()
 
     # Validation dataset
-    dataset_val = TvDataset()
-    dataset_val.load_tv(args.dataset, "val")
+    dataset_val = LogoDataset()
+    dataset_val.load_logo(args.dataset, "val")
     dataset_val.prepare()
 
     # *** This training schedule is an example. Update to your needs ***
@@ -321,13 +328,13 @@ if __name__ == '__main__':
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(
-        description='Train Mask R-CNN to detect tvs.')
+        description='Train Mask R-CNN to detect logos.')
     parser.add_argument("command",
                         metavar="<command>",
                         help="'train' or 'splash'")
     parser.add_argument('--dataset', required=False,
-                        metavar="/path/to/tv/dataset/",
-                        help='Directory of the tv dataset')
+                        metavar="/path/to/logo/dataset/",
+                        help='Directory of the logo dataset')
     parser.add_argument('--weights', required=True,
                         metavar="/path/to/weights.h5",
                         help="Path to weights .h5 file or 'coco'")
@@ -356,9 +363,9 @@ if __name__ == '__main__':
 
     # Configurations
     if args.command == "train":
-        config = TvConfig()
+        config = LogoConfig()
     else:
-        class InferenceConfig(TvConfig):
+        class InferenceConfig(LogoConfig):
             # Set batch size to 1 since we'll be running inference on
             # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
             GPU_COUNT = 1

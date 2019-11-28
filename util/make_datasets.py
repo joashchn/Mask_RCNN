@@ -23,7 +23,7 @@ def rename_img_path(file_dir):
                 fileJson["imageData"] = '-1'
                 # fileJson['shapes']["fill_color"] = '-1'
                 # fileJson["line_color"] = '-1'
-                rewrite_json_file('/Users/joash/PycharmProjects/Mask_RCNN/tv/'+f, fileJson)
+                rewrite_json_file('/Users/joash/PycharmProjects/Mask_RCNN/images/logo/train/'+f, fileJson)
         else:
             continue
 
@@ -38,12 +38,16 @@ def merge_json(file_dir):
                 fileJson = json.load(f1)
                 print(type(fileJson))
                 print(f.split('.')[0])
-                content+=f.split('.')[0]+':'+str(fileJson)+','
+                content+='"'
+                content+=f.split('.')[0]
+                content+='"'
+                content+=':' + str(fileJson) + ','
     content+='}'
+    content = content.replace('None','-1')
     return content
 
 
-file_dir = '/Users/joash/PycharmProjects/Mask_RCNN/tv/'
+file_dir = '/Users/joash/PycharmProjects/Mask_RCNN/images/logo/train/'
 # rename_img_path(file_dir)
 
 content = merge_json(file_dir)
