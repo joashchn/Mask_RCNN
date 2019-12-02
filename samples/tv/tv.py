@@ -250,33 +250,29 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
         # image = skimage.io.imread(args.image)
 
         # print("Running on {}".format(image_path))
-        # # Read image
-        # image = skimage.io.imread(image_path)
+        r = model.detect(image_path, verbose=1)
         # t = time.time()
         # print((int(round(t * 1000))))
-        # print(image)
-        # Detect objects
-        r = model.detect(image_path, verbose=1)[0]
-        t = time.time()
-        print((int(round(t * 1000))))
-        sys.exit()
         # Color splash
-        index = np.argwhere(r['masks'] == True)
-        y_min = np.min(index[:, 0])
-        x_mid = int((np.min(index[:, 1]) + np.max(index[:, 1]))/2)
-        # splash = color_splash(image, r['masks'])
-        # splash = cv2.rectangle(splash, (x_mid-5, y_min-5), (x_mid+5, y_min-15), (0, 0, 255), 2)
-        if x_mid-5>0 and y_min-15>0 and x_mid+5<300:
-            region = image[y_min-15:y_min-5, x_mid-5:x_mid+5]
-            region_type = 0
-        else:
-            region = image
-            region_type = 1
+        region = []
+        region_type = []
+        for i in range(len(r)):
+            index = np.argwhere(r[i]['masks'] == True)
+            y_min = np.min(index[:, 0])
+            x_mid = int((np.min(index[:, 1]) + np.max(index[:, 1]))/2)
+            # splash = color_splash(image_path[i], r[i]['masks'])
+            # splash = cv2.rectangle(splash, (x_mid-5, y_min-5), (x_mid+5, y_min-15), (0, 0, 255), 2)
+            if x_mid-5>0 and y_min-15>0 and x_mid+5<300:
+                region.append(image_path[i][y_min-15:y_min-5, x_mid-5:x_mid+5])
+                region_type.append(0)
+            else:
+                region.append(image_path[i])
+                region_type.append(1)
 
-        # Save output
-        # file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
-        # skimage.io.imsave(file_name, splash)
-        # skimage.io.imsave('region_'+file_name, region)
+            # Save output
+            # file_name = "detect_"+str(i)+".png"
+            # skimage.io.imsave('splash_'+file_name, splash)
+            # skimage.io.imsave('region_'+file_name, region)
 
         # cv2.imshow('region', region)
         # cv2.waitKey(2)
@@ -466,25 +462,19 @@ def test_process():
     model = modellib.MaskRCNN(mode="inference", config=config, model_dir=args.logs)
     model.load_weights(config.WEIGHT_PATH, by_name=True)
 
-    import time
-    t = time.time()
-    print((int(round(t * 1000))))
     image_ = io.ImageCollection(str(config.IMG_PATH + '/*.jpg'))
-    # for f in os.listdir(config.IMG_PATH):
-    print(image_)
-
     region, region_type = detect_and_color_splash(model, image_path=image_)
     sys.exit()
 
-    img_arr = []
-    for i in range(len(image_)):
-        img_data = io.imread(image_[i])
-        print(img_data)
-        img_arr.append(img_data)
-        print(img_arr[i, :, :])
-        # region, region_type = detect_and_color_splash(model, image_path=config.IMG_PATH+f)
-        t = time.time()
-        print((int(round(t * 1000))))
+    # img_arr = []
+    # for i in range(len(image_)):
+    #     img_data = io.imread(image_[i])
+    #     print(img_data)
+    #     img_arr.append(img_data)
+    #     print(img_arr[i, :, :])
+    #     # region, region_type = detect_and_color_splash(model, image_path=config.IMG_PATH+f)
+    #     t = time.time()
+    #     print((int(round(t * 1000))))
     # print(region, region_type)
 
 
