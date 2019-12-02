@@ -147,7 +147,7 @@ class LogoDataset(utils.Dataset):
 
             polygons = []
             for i in range(len(a['shapes'])):
-                polygons.append({'name': a['shapes'][i]['label'], 'all_points_x': np.array(a['shapes'][i]['points'])[:, 1].tolist(),
+                polygons.append({'name': a['shapes'][i]['label'], 'all_points_x': np.array(a['shapes'][i]['points'])[:, 0].tolist(),
                  'all_points_y': np.array(a['shapes'][i]['points'])[:, 1].tolist()})
 
             # print(polygons)
