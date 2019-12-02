@@ -1068,7 +1068,7 @@ def rpn_bbox_loss_graph(config, target_bbox, rpn_match, rpn_bbox):
                                    config.IMAGES_PER_GPU)
 
     loss = smooth_l1_loss(target_bbox, rpn_bbox)
-    
+
     loss = K.switch(tf.size(loss) > 0, K.mean(loss), tf.constant(0.0))
     return loss
 
@@ -2491,8 +2491,8 @@ class MaskRCNN():
         masks: [H, W, N] instance binary masks
         """
         assert self.mode == "inference", "Create model in inference mode."
-        assert len(
-            images) == self.config.BATCH_SIZE, "len(images) must be equal to BATCH_SIZE"
+        # assert len(
+        #     images) == self.config.BATCH_SIZE, "len(images) must be equal to BATCH_SIZE"
 
         if verbose:
             log("Processing {} images".format(len(images)))
@@ -2513,15 +2513,21 @@ class MaskRCNN():
         anchors = self.get_anchors(image_shape)
         # Duplicate across the batch dimension because Keras requires it
         # TODO: can this be optimized to avoid duplicating the anchors?
-        anchors = np.broadcast_to(anchors, (self.config.BATCH_SIZE,) + anchors.shape)
+        anchors = np.broadcast_to(anchors, (2,) + anchors.shape)
 
         if verbose:
             log("molded_images", molded_images)
             log("image_metas", image_metas)
             log("anchors", anchors)
         # Run object detection
+        import time
+        t1 = time.time()
+        print('predict before:', (int(round(t1 * 1000))))
         detections, _, _, mrcnn_mask, _, _, _ =\
             self.keras_model.predict([molded_images, image_metas, anchors], verbose=0)
+        t2 = time.time()
+        print('predict after:', (int(round(t2 * 1000))))
+        print('delta:', (int(round(t2 * 1000))) -  (int(round(t1 * 1000))))
         # Process detections
         results = []
         for i, image in enumerate(images):

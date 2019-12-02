@@ -33,6 +33,7 @@ import json
 import datetime
 import numpy as np
 import skimage.draw
+from skimage import io, data_dir
 import cv2
 
 # Root directory of the project
@@ -242,24 +243,29 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
     # Image or video?
     if image_path:
         import cv2
+        import time
         # Run model detection and generate the color splash effect
         # print("Running on {}".format(args.image))
         # # Read image
         # image = skimage.io.imread(args.image)
 
-        print("Running on {}".format(image_path))
-        # Read image
-        image = skimage.io.imread(image_path)
+        # print("Running on {}".format(image_path))
+        # # Read image
+        # image = skimage.io.imread(image_path)
+        # t = time.time()
+        # print((int(round(t * 1000))))
+        # print(image)
         # Detect objects
-        r = model.detect([image], verbose=1)[0]
+        r = model.detect(image_path, verbose=1)[0]
+        t = time.time()
+        print((int(round(t * 1000))))
+        sys.exit()
         # Color splash
-        # print(r)
-        # print(r['masks']==)
         index = np.argwhere(r['masks'] == True)
         y_min = np.min(index[:, 0])
         x_mid = int((np.min(index[:, 1]) + np.max(index[:, 1]))/2)
-        splash = color_splash(image, r['masks'])
-        splash = cv2.rectangle(splash, (x_mid-5, y_min-5), (x_mid+5, y_min-15), (0, 0, 255), 2)
+        # splash = color_splash(image, r['masks'])
+        # splash = cv2.rectangle(splash, (x_mid-5, y_min-5), (x_mid+5, y_min-15), (0, 0, 255), 2)
         if x_mid-5>0 and y_min-15>0 and x_mid+5<300:
             region = image[y_min-15:y_min-5, x_mid-5:x_mid+5]
             region_type = 0
@@ -268,8 +274,8 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
             region_type = 1
 
         # Save output
-        file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
-        skimage.io.imsave(file_name, splash)
+        # file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
+        # skimage.io.imsave(file_name, splash)
         # skimage.io.imsave('region_'+file_name, region)
 
         # cv2.imshow('region', region)
@@ -316,123 +322,171 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
 #  Training
 ############################################################
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
+#     import argparse
+#
+#     # Parse command line arguments
+#     parser = argparse.ArgumentParser(
+#         description='Train Mask R-CNN to detect tvs.')
+#     parser.add_argument("command",
+#                         metavar="<command>",
+#                         help="'train' or 'splash'")
+#     parser.add_argument('--dataset', required=False,
+#                         metavar="/path/to/tv/dataset/",
+#                         help='Directory of the tv dataset')
+#     parser.add_argument('--weights', required=True,
+#                         metavar="/path/to/weights.h5",
+#                         help="Path to weights .h5 file or 'coco'")
+#     parser.add_argument('--logs', required=False,
+#                         default=DEFAULT_LOGS_DIR,
+#                         metavar="/path/to/logs/",
+#                         help='Logs and checkpoints directory (default=logs/)')
+#     parser.add_argument('--image', required=False,
+#                         metavar="path or URL to image",
+#                         help='Image to apply the color splash effect on')
+#     parser.add_argument('--video', required=False,
+#                         metavar="path or URL to video",
+#                         help='Video to apply the color splash effect on')
+#     args = parser.parse_args()
+#
+#     # Validate arguments
+#     if args.command == "train":
+#         assert args.dataset, "Argument --dataset is required for training"
+#     elif args.command == "splash":
+#         assert args.image or args.video, \
+#             "Provide --image or --video to apply color splash"
+#
+#     print("Weights: ", args.weights)
+#     print("Dataset: ", args.dataset)
+#     print("Logs: ", args.logs)
+#
+#     # Configurations
+#     if args.command == "train":
+#         config = TvConfig()
+#     else:
+#         class InferenceConfig(TvConfig):
+#             # Set batch size to 1 since we'll be running inference on
+#             # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
+#             GPU_COUNT = 1
+#             IMAGES_PER_GPU = 1
+#
+#
+#         config = InferenceConfig()
+#     config.display()
+#
+#     # Create model
+#     if args.command == "train":
+#         model = modellib.MaskRCNN(mode="training", config=config,
+#                                   model_dir=args.logs)
+#     else:
+#         model = modellib.MaskRCNN(mode="inference", config=config,
+#                                   model_dir=args.logs)
+#
+#     # Select weights file to load
+#     if args.weights.lower() == "coco":
+#         weights_path = COCO_WEIGHTS_PATH
+#         # Download weights file
+#         if not os.path.exists(weights_path):
+#             utils.download_trained_weights(weights_path)
+#     elif args.weights.lower() == "last":
+#         # Find last trained weights
+#         weights_path = model.find_last()
+#     elif args.weights.lower() == "imagenet":
+#         # Start from ImageNet trained weights
+#         weights_path = model.get_imagenet_weights()
+#     else:
+#         weights_path = args.weights
+#
+#     # Load weights
+#     print("Loading weights ", weights_path)
+#     if args.weights.lower() == "coco":
+#         # Exclude the last layers because they require a matching
+#         # number of classes
+#         model.load_weights(weights_path, by_name=True, exclude=[
+#             "mrcnn_class_logits", "mrcnn_bbox_fc",
+#             "mrcnn_bbox", "mrcnn_mask"])
+#     else:
+#         model.load_weights(weights_path, by_name=True)
+#
+#     # Train or evaluate
+#     if args.command == "train":
+#         train(model)
+#     elif args.command == "splash":
+#         path_ = '/Users/joash/PycharmProjects/Mask_RCNN/imagess/'
+#         for f in os.listdir(path_):
+#             if 'jpg' in f:
+#                 # 1、得到region
+#                 region, region_type = detect_and_color_splash(model, image_path=path_ + f,
+#                                         video_path=args.video)
+#                 # 2、计算方差
+#                 v_b, v_g, v_r = img_variance(region)
+#                 if v_b <10 and v_g<10 and v_r<10:
+#                     variance_type = 0
+#                 else:
+#                     variance_type = 1
+#                 # 3、转lab，计算差距
+#                 img_t = cv2.cvtColor(region, cv2.COLOR_BGR2LAB)
+#                 img_t1 = img_t[:, :, 0]
+#                 img_t2 = img_t[:, :, 1]
+#                 img_t3 = img_t[:, :, 2]
+#
+#                 t1 = np.mean(img_t1) / 255.
+#                 t2 = np.mean(img_t2) / 255.
+#                 t3 = np.mean(img_t3) / 255.
+#                 x = [t1, t2, t3]
+#                 print(region_type)
+#                 print(variance_type)
+#                 print(x)
+#
+#
+#     else:
+#         print("'{}' is not recognized. "
+#               "Use 'train' or 'splash'".format(args.command))
+
+def test_process():
     import argparse
 
-    # Parse command line arguments
     parser = argparse.ArgumentParser(
         description='Train Mask R-CNN to detect tvs.')
-    parser.add_argument("command",
-                        metavar="<command>",
-                        help="'train' or 'splash'")
-    parser.add_argument('--dataset', required=False,
-                        metavar="/path/to/tv/dataset/",
-                        help='Directory of the tv dataset')
-    parser.add_argument('--weights', required=True,
-                        metavar="/path/to/weights.h5",
-                        help="Path to weights .h5 file or 'coco'")
     parser.add_argument('--logs', required=False,
                         default=DEFAULT_LOGS_DIR,
                         metavar="/path/to/logs/",
                         help='Logs and checkpoints directory (default=logs/)')
-    parser.add_argument('--image', required=False,
-                        metavar="path or URL to image",
-                        help='Image to apply the color splash effect on')
-    parser.add_argument('--video', required=False,
-                        metavar="path or URL to video",
-                        help='Video to apply the color splash effect on')
     args = parser.parse_args()
 
-    # Validate arguments
-    if args.command == "train":
-        assert args.dataset, "Argument --dataset is required for training"
-    elif args.command == "splash":
-        assert args.image or args.video, \
-            "Provide --image or --video to apply color splash"
-
-    print("Weights: ", args.weights)
-    print("Dataset: ", args.dataset)
-    print("Logs: ", args.logs)
-
-    # Configurations
-    if args.command == "train":
-        config = TvConfig()
-    else:
-        class InferenceConfig(TvConfig):
-            # Set batch size to 1 since we'll be running inference on
-            # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
-            GPU_COUNT = 1
-            IMAGES_PER_GPU = 1
-
-
-        config = InferenceConfig()
+    class InferenceConfig(TvConfig):
+        # Set batch size to 1 since we'll be running inference on
+        # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
+        GPU_COUNT = 1
+        IMAGES_PER_GPU = 1
+        WEIGHT_PATH = '/Users/joash/PycharmProjects/Mask_RCNN/samples/mask_rcnn_tv_0030.h5'
+        IMG_PATH = '/Users/joash/PycharmProjects/Mask_RCNN/imagess/'
+    config = InferenceConfig()
     config.display()
+    model = modellib.MaskRCNN(mode="inference", config=config, model_dir=args.logs)
+    model.load_weights(config.WEIGHT_PATH, by_name=True)
 
-    # Create model
-    if args.command == "train":
-        model = modellib.MaskRCNN(mode="training", config=config,
-                                  model_dir=args.logs)
-    else:
-        model = modellib.MaskRCNN(mode="inference", config=config,
-                                  model_dir=args.logs)
+    import time
+    t = time.time()
+    print((int(round(t * 1000))))
+    image_ = io.ImageCollection(str(config.IMG_PATH + '/*.jpg'))
+    # for f in os.listdir(config.IMG_PATH):
+    print(image_)
 
-    # Select weights file to load
-    if args.weights.lower() == "coco":
-        weights_path = COCO_WEIGHTS_PATH
-        # Download weights file
-        if not os.path.exists(weights_path):
-            utils.download_trained_weights(weights_path)
-    elif args.weights.lower() == "last":
-        # Find last trained weights
-        weights_path = model.find_last()
-    elif args.weights.lower() == "imagenet":
-        # Start from ImageNet trained weights
-        weights_path = model.get_imagenet_weights()
-    else:
-        weights_path = args.weights
+    region, region_type = detect_and_color_splash(model, image_path=image_)
+    sys.exit()
 
-    # Load weights
-    print("Loading weights ", weights_path)
-    if args.weights.lower() == "coco":
-        # Exclude the last layers because they require a matching
-        # number of classes
-        model.load_weights(weights_path, by_name=True, exclude=[
-            "mrcnn_class_logits", "mrcnn_bbox_fc",
-            "mrcnn_bbox", "mrcnn_mask"])
-    else:
-        model.load_weights(weights_path, by_name=True)
-
-    # Train or evaluate
-    if args.command == "train":
-        train(model)
-    elif args.command == "splash":
-        path_ = '/Users/joash/PycharmProjects/Mask_RCNN/imagess/'
-        for f in os.listdir(path_):
-            if 'jpg' in f:
-                # 1、得到region
-                region, region_type = detect_and_color_splash(model, image_path=path_ + f,
-                                        video_path=args.video)
-                # 2、计算方差
-                v_b, v_g, v_r = img_variance(region)
-                if v_b <10 and v_g<10 and v_r<10:
-                    variance_type = 0
-                else:
-                    variance_type = 1
-                # 3、转lab，计算差距
-                img_t = cv2.cvtColor(region, cv2.COLOR_BGR2LAB)
-                img_t1 = img_t[:, :, 0]
-                img_t2 = img_t[:, :, 1]
-                img_t3 = img_t[:, :, 2]
-
-                t1 = np.mean(img_t1) / 255.
-                t2 = np.mean(img_t2) / 255.
-                t3 = np.mean(img_t3) / 255.
-                x = [t1, t2, t3]
-                print(region_type)
-                print(variance_type)
-                print(x)
+    img_arr = []
+    for i in range(len(image_)):
+        img_data = io.imread(image_[i])
+        print(img_data)
+        img_arr.append(img_data)
+        print(img_arr[i, :, :])
+        # region, region_type = detect_and_color_splash(model, image_path=config.IMG_PATH+f)
+        t = time.time()
+        print((int(round(t * 1000))))
+    # print(region, region_type)
 
 
-    else:
-        print("'{}' is not recognized. "
-              "Use 'train' or 'splash'".format(args.command))
+if __name__ == '__main__':
+    test_process()
