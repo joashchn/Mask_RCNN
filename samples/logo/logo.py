@@ -34,6 +34,7 @@ import datetime
 import numpy as np
 import skimage.draw
 import cv2
+from PIL import Image
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
@@ -233,13 +234,36 @@ def color_splash(image, mask):
     # Make a grayscale copy of the image. The grayscale copy still
     # has 3 RGB channels, though.
     gray = skimage.color.gray2rgb(skimage.color.rgb2gray(image)) * 255
+    print(gray)
+    red = [255, 0, 12]
     # Copy color pixels from the original color image where mask is set
     if mask.shape[-1] > 0:
         # We're treating all instances as one, so collapse the mask into one layer
         mask = (np.sum(mask, -1, keepdims=True) >= 1)
-        splash = np.where(mask, image, gray).astype(np.uint8)
+        splash = np.where(mask, red, image).astype(np.uint8)
     else:
         splash = gray.astype(np.uint8)
+    return splash
+
+def color_splash2(image, mask):
+    """Apply color splash effect.
+    image: RGB image [height, width, 3]
+    mask: instance segmentation mask [height, width, instance count]
+
+    Returns result image.
+    """
+    # Make a grayscale copy of the image. The grayscale copy still
+    # has 3 RGB channels, though.
+    # gray = skimage.color.gray2rgb(skimage.color.rgb2gray(image)) * 255
+    # Copy color pixels from the original color image where mask is set
+    # print(mask)
+    if mask.shape[-1] > 0:
+        # We're treating all instances as one, so collapse the mask into one layer
+        mask = (np.sum(mask, -1, keepdims=True) >= 1)
+        print(mask)
+        splash = np.where(mask, image, image).astype(np.uint8)
+    else:
+        splash = image.astype(np.uint8)
     return splash
 
 
@@ -248,41 +272,26 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
 
     # Image or video?
     if image_path:
-        import cv2
         # Run model detection and generate the color splash effect
-        # print("Running on {}".format(args.image))
-        # # Read image
-        # image = skimage.io.imread(args.image)
-
-        print("Running on {}".format(image_path))
+        print("Running on {}".format(args.image))
         # Read image
-        image = skimage.io.imread(image_path)
+        image = skimage.io.imread(args.image)
+        # image = Image.open(args.image)
         # Detect objects
         r = model.detect([image], verbose=1)[0]
         # Color splash
-        # print(r)
-        # print(r['masks']==)
-        index = np.argwhere(r['masks'] == True)
-        y_min = np.min(index[:, 0])
-        x_mid = int((np.min(index[:, 1]) + np.max(index[:, 1]))/2)
+        # index = np.argwhere(r['masks'] == True)
+        # print(index)
+        # # print(image[])
+        # for i in range(len(index)):
+        #     image(index[:, i, 0], index[:, i, 1])
+        #     image.putpixel((index[:, i, 0], index[:, i, 1]), (225, 0, 26, 0))
+        # sys.exit()
         splash = color_splash(image, r['masks'])
-        splash = cv2.rectangle(splash, (x_mid-5, y_min-5), (x_mid+5, y_min-15), (0, 0, 255), 2)
-        if x_mid-5>0 and y_min-15>0 and x_mid+5<300:
-            region = image[y_min-15:y_min-5, x_mid-5:x_mid+5]
-            region_type = 0
-        else:
-            region = image
-            region_type = 1
-
         # Save output
+        # splash = image.convert('RGB')
         file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
         skimage.io.imsave(file_name, splash)
-        # skimage.io.imsave('region_'+file_name, region)
-
-        # cv2.imshow('region', region)
-        # cv2.waitKey(2)
-
-        return region, region_type
     elif video_path:
         import cv2
         # Video capture
@@ -413,33 +422,16 @@ if __name__ == '__main__':
     if args.command == "train":
         train(model)
     elif args.command == "splash":
-        path_ = '/Users/joash/PycharmProjects/Mask_RCNN/imagess/'
-        for f in os.listdir(path_):
-            if 'jpg' in f:
-                # 1、得到region
-                region, region_type = detect_and_color_splash(model, image_path=path_ + f,
-                                        video_path=args.video)
-                # 2、计算方差
-                v_b, v_g, v_r = img_variance(region)
-                if v_b <10 and v_g<10 and v_r<10:
-                    variance_type = 0
-                else:
-                    variance_type = 1
-                # 3、转lab，计算差距
-                img_t = cv2.cvtColor(region, cv2.COLOR_BGR2LAB)
-                img_t1 = img_t[:, :, 0]
-                img_t2 = img_t[:, :, 1]
-                img_t3 = img_t[:, :, 2]
-
-                t1 = np.mean(img_t1) / 255.
-                t2 = np.mean(img_t2) / 255.
-                t3 = np.mean(img_t3) / 255.
-                x = [t1, t2, t3]
-                print(region_type)
-                print(variance_type)
-                print(x)
-
-
+        detect_and_color_splash(model, image_path=args.image,
+                                video_path=args.video)
     else:
         print("'{}' is not recognized. "
               "Use 'train' or 'splash'".format(args.command))
+
+
+'''
+ image_ = skimage.io.ImageCollection(str(config.IMG_PATH + '/*.jpg'))
+    # image_ = skimage.io.imread(config.IMG_PATH + '/*.png')
+    for f in range(len(image_)):
+
+'''
