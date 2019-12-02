@@ -250,7 +250,7 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
         # image = skimage.io.imread(args.image)
 
         # print("Running on {}".format(image_path))
-        r = model.detect(image_path, verbose=1)
+        r = model.detect(image_path, len(image_path), verbose=1)
         # t = time.time()
         # print((int(round(t * 1000))))
         # Color splash
