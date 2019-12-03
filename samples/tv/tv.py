@@ -35,7 +35,7 @@ import numpy as np
 import skimage.draw
 from skimage import io, data_dir
 import cv2
-
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
 
@@ -261,7 +261,7 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
             y_min = np.min(index[:, 0])
             x_mid = int((np.min(index[:, 1]) + np.max(index[:, 1]))/2)
             # splash = color_splash(image_path[i], r[i]['masks'])
-            # splash = cv2.rectangle(splash, (x_mid-5, y_min-5), (x_mid+5, y_min-15), (0, 0, 255), 2)
+            splash = cv2.rectangle(image_path[i], (x_mid-5, y_min-5), (x_mid+5, y_min-15), (0, 0, 255), 2)
             if x_mid-5>0 and y_min-15>0 and x_mid+5<300:
                 region.append(image_path[i][y_min-15:y_min-5, x_mid-5:x_mid+5])
                 region_type.append(0)
@@ -270,8 +270,8 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
                 region_type.append(1)
 
             # Save output
-            # file_name = "detect_"+str(i)+".png"
-            # skimage.io.imsave('splash_'+file_name, splash)
+            file_name = "detect_"+str(time.time())+".png"
+            skimage.io.imsave('splash_'+file_name, splash)
             # skimage.io.imsave('region_'+file_name, region)
 
         # cv2.imshow('region', region)
@@ -461,9 +461,11 @@ def test_process():
     config.display()
     model = modellib.MaskRCNN(mode="inference", config=config, model_dir=args.logs)
     model.load_weights(config.WEIGHT_PATH, by_name=True)
-
     image_ = io.ImageCollection(str(config.IMG_PATH + '/*.jpg'))
-    region, region_type = detect_and_color_splash(model, image_path=image_)
+    # for f in os.listdir(config.IMG_PATH):
+    for i in range(len(image_)):
+        # image_ = skimage.io.imread(config.IMG_PATH + f)
+        region, region_type = detect_and_color_splash(model, image_path=[image_[i]])
     sys.exit()
 
     # img_arr = []
