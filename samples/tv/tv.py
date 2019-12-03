@@ -238,10 +238,11 @@ def color_splash(image, mask):
 
 
 def detect_and_color_splash(model, image_path=None, video_path=None):
-    assert image_path or video_path
+    # assert image_path or video_path
 
     # Image or video?
-    if image_path:
+    print(len(image_path))
+    if image_path.any():
         import cv2
         import time
         # Run model detection and generate the color splash effect
@@ -250,7 +251,7 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
         # image = skimage.io.imread(args.image)
 
         # print("Running on {}".format(image_path))
-        r = model.detect(image_path, len(image_path), verbose=1)
+        r = model.detect([image_path], verbose=1)
         # t = time.time()
         # print((int(round(t * 1000))))
         # Color splash
@@ -278,7 +279,7 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
         # cv2.waitKey(2)
 
         return region, region_type
-    elif video_path:
+    elif video_path.any():
         import cv2
         # Video capture
         vcapture = cv2.VideoCapture(video_path)
@@ -461,12 +462,22 @@ def test_process():
     config.display()
     model = modellib.MaskRCNN(mode="inference", config=config, model_dir=args.logs)
     model.load_weights(config.WEIGHT_PATH, by_name=True)
+<<<<<<< HEAD
     image_ = io.ImageCollection(str(config.IMG_PATH + '/*.jpg'))
     # for f in os.listdir(config.IMG_PATH):
     for i in range(len(image_)):
         # image_ = skimage.io.imread(config.IMG_PATH + f)
         region, region_type = detect_and_color_splash(model, image_path=[image_[i]])
     sys.exit()
+=======
+
+    # image_ = io.ImageCollection(str(config.IMG_PATH + '/*.jpg'))
+    for f in os.listdir(config.IMG_PATH):
+        print(config.IMG_PATH + f)
+        image_ = skimage.io.imread(config.IMG_PATH + f)
+        # print(image_)
+        region, region_type = detect_and_color_splash(model, image_path=image_)
+>>>>>>> 4a541d54ec89ef0eb0ce4c857a1284efec18d085
 
     # img_arr = []
     # for i in range(len(image_)):

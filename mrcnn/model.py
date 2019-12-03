@@ -2479,7 +2479,7 @@ class MaskRCNN():
 
         return boxes, class_ids, scores, full_masks
 
-    def detect(self, images, batch_, verbose=0):
+    def detect(self, images, verbose=0):
         """Runs the detection pipeline.
 
         images: List of images, potentially of different sizes.
@@ -2492,7 +2492,7 @@ class MaskRCNN():
         """
         assert self.mode == "inference", "Create model in inference mode."
         assert len(
-            images) == batch_, "len(images) must be equal to BATCH_SIZE"
+            images) == self.config.BATCH_SIZE, "len(images) must be equal to BATCH_SIZE"
 
         if verbose:
             log("Processing {} images".format(len(images)))
@@ -2513,7 +2513,7 @@ class MaskRCNN():
         anchors = self.get_anchors(image_shape)
         # Duplicate across the batch dimension because Keras requires it
         # TODO: can this be optimized to avoid duplicating the anchors?
-        anchors = np.broadcast_to(anchors, (batch_,) + anchors.shape)
+        anchors = np.broadcast_to(anchors, (2,) + anchors.shape)
 
         if verbose:
             log("molded_images", molded_images)
