@@ -48,13 +48,10 @@ def merge_json(file_dir):
 
 
 file_dir = '/Users/joash/PycharmProjects/Mask_RCNN/images/logo/train/'
-# rename_img_path(file_dir)
 
+# 1、rename and remove useless data and modify invalid data(None)
+rename_img_path(file_dir)
+
+# 2、merge json，the please copy the result content to the FEhelper, fix it and copy to a new json file
 content = merge_json(file_dir)
 print(content)
-
-# f = open("/Users/joash/PycharmProjects/Mask_RCNN/images/ceiling/train/train_ceiling.json","r+")   #设置文件对象
-# str1 = f.read()
-# str2 = str1.replace("'", '"')
-# print(str2)
-# f.write(str2)
