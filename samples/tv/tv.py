@@ -254,29 +254,32 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
         # t = time.time()
         # print((int(round(t * 1000))))
         # Color splash
-        region = []
-        region_type = []
+        # region = []
+        # region_type = []
+        region = image_path[0]
+        region_type = 1
         for i in range(len(r)):
             index = np.argwhere(r[i]['masks'] == True)
+            if len(index[:, 0]) == 0:
+                continue
             y_min = np.min(index[:, 0])
             x_mid = int((np.min(index[:, 1]) + np.max(index[:, 1]))/2)
             # splash = color_splash(image_path[i], r[i]['masks'])
-            splash = cv2.rectangle(image_path[i], (x_mid-5, y_min-5), (x_mid+5, y_min-15), (0, 0, 255), 2)
+            # splash = cv2.rectangle(image_path[i], (x_mid-5, y_min-5), (x_mid+5, y_min-15), (0, 0, 255), 2)
             if x_mid-5>0 and y_min-15>0 and x_mid+5<300:
-                region.append(image_path[i][y_min-15:y_min-5, x_mid-5:x_mid+5])
-                region_type.append(0)
+                region = image_path[i][y_min-15:y_min-5, x_mid-5:x_mid+5]
+                region_type = 0
             else:
-                region.append(image_path[i])
-                region_type.append(1)
+                region = image_path[i]
+                region_type = 1
 
             # Save output
-            file_name = "detect_"+str(time.time())+".png"
-            skimage.io.imsave('splash_'+file_name, splash)
+            # file_name = "detect_"+str(time.time())+".png"
+            # skimage.io.imsave('splash_'+file_name, splash)
             # skimage.io.imsave('region_'+file_name, region)
 
         # cv2.imshow('region', region)
         # cv2.waitKey(2)
-
         return region, region_type
     elif video_path:
         import cv2
@@ -466,7 +469,8 @@ def test_process():
     for i in range(len(image_)):
         # image_ = skimage.io.imread(config.IMG_PATH + f)
         region, region_type = detect_and_color_splash(model, image_path=[image_[i]])
-    sys.exit()
+        print(region_type)
+    # sys.exit()
 
     # img_arr = []
     # for i in range(len(image_)):
