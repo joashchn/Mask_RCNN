@@ -458,8 +458,8 @@ def test_process():
         # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
         GPU_COUNT = 1
         IMAGES_PER_GPU = 1
-        WEIGHT_PATH = '/data/object_detection/joash/Mask_RCNN/samples/mask_rcnn_tv_0030.h5'
-        IMG_PATH = '/data/object_detection/joash/Mask_RCNN/imagess/'
+        WEIGHT_PATH = '/Users/oyo01135/PycharmProjects/Mask_RCNN/model/tv/mask_rcnn_tv_0030.h5'
+        IMG_PATH = '/Users/oyo01135/PycharmProjects/Mask_RCNN/images/tv/'
     config = InferenceConfig()
     config.display()
     model = modellib.MaskRCNN(mode="inference", config=config, model_dir=args.logs)
