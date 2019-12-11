@@ -42,7 +42,7 @@ ROOT_DIR = os.path.abspath("../../")
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn.config import Config
-from mrcnn import model as modellib, utils
+from mrcnn import model1 as modellib, utils
 
 # Path to trained weights file
 COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
@@ -459,12 +459,12 @@ def test_process():
         GPU_COUNT = 1
         IMAGES_PER_GPU = 1
         WEIGHT_PATH = '/Users/oyo01135/PycharmProjects/Mask_RCNN/model/tv/mask_rcnn_tv_0030.h5'
-        IMG_PATH = '/Users/oyo01135/PycharmProjects/Mask_RCNN/images/tv/'
+        IMG_PATH = '/Users/oyo01135/PycharmProjects/Mask_RCNN/images/test/'
     config = InferenceConfig()
     config.display()
     model = modellib.MaskRCNN(mode="inference", config=config, model_dir=args.logs)
     model.load_weights(config.WEIGHT_PATH, by_name=True)
-    image_ = io.ImageCollection(str(config.IMG_PATH + '/*.jpg'))
+    image_ = io.ImageCollection(str(config.IMG_PATH + '/*'))
     #print(image_.files)
     #print(image_.files[0])
     # for f in os.listdir(config.IMG_PATH):
