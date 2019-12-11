@@ -35,6 +35,8 @@ import numpy as np
 import skimage.draw
 import cv2
 from PIL import Image
+from skimage import io, data_dir
+import random
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
@@ -42,7 +44,7 @@ ROOT_DIR = os.path.abspath("../../")
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn.config import Config
-from mrcnn import model as modellib, utils
+from mrcnn import model1 as modellib, utils
 
 # Path to trained weights file
 COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
@@ -63,6 +65,7 @@ def img_variance(img):
     v_r = img[:, :, 2].std()
 
     return v_b, v_g, v_r
+
 
 class LogoConfig(Config):
     """Configuration for training on the toy  dataset.
@@ -147,8 +150,9 @@ class LogoDataset(utils.Dataset):
 
             polygons = []
             for i in range(len(a['shapes'])):
-                polygons.append({'name': a['shapes'][i]['label'], 'all_points_x': np.array(a['shapes'][i]['points'])[:, 0].tolist(),
-                 'all_points_y': np.array(a['shapes'][i]['points'])[:, 1].tolist()})
+                polygons.append(
+                    {'name': a['shapes'][i]['label'], 'all_points_x': np.array(a['shapes'][i]['points'])[:, 0].tolist(),
+                     'all_points_y': np.array(a['shapes'][i]['points'])[:, 1].tolist()})
 
             # print(polygons)
 
@@ -246,6 +250,7 @@ def color_splash(image, mask, fill):
         splash = gray.astype(np.uint8)
     return splash
 
+
 def color_splash2(image, mask):
     """Apply color splash effect.
     image: RGB image [height, width, 3]
@@ -267,54 +272,45 @@ def color_splash2(image, mask):
     return splash
 
 
-def detect_and_color_splash(model, image_path=None, video_path=None):
-    assert image_path or video_path
+def detect_and_color_splash(model, image_origin=None, image_sync=None, video_path=None):
+    assert image_origin or video_path
 
     # Image or video?
-    if image_path:
+    if image_origin:
         # Run model detection and generate the color splash effect
-        print("Running on {}".format(args.image))
-        # Read image
-        image = skimage.io.imread(args.image)
+        # print("Running on {}".format(args.image))
+        # # Read image
+        # image_logo = skimage.io.imread(args.image)
         # image = Image.open(args.image)
         # Detect objects
-        r = model.detect([image], verbose=1)[0]
-        image = skimage.io.imread('/data/joash/Mask_RCNN/images/logo/val/1_437647_2.jpg')
+        # r = model.detect([image_logo], verbose=1)[0]
+        # r = model.detect(image_origin, len(image_origin), verbose=1)
+        # image = skimage.io.imread('/data/joash/Mask_RCNN/images/logo/val/1_397147_2.jpg')
+        # image_res = image
         # Color splash
         # print(r)
+        r = model.detect(image_origin, len(image_origin), verbose=1)[0]
         index = np.argwhere(r['masks'] == True)
-        # print(index)
-        # # print(image[])
         sum_b = 0
         sum_g = 0
         sum_r = 0
         for i in range(len(index)):
             x = index[i][1]
             y = index[i][0]
-            # print(x)
-            # print(y)
-            # print(image)
-            # print(image.shape)
-            # print(type(image))
-            sum_b += image[y, x][0]
-            sum_g += image[y, x][1]
-            sum_r += image[y, x][2]
-        print(sum_b/len(index))
-        print(sum_g/len(index))
-        print(sum_r/len(index))
-        fill = [sum_b/len(index), sum_g/len(index), sum_r/len(index)]
-        #     sum_g += index[:, i, 1]
-        #     sum_r += index[:, i, 2]
-        #     # image.putpixel((index[:, i, 0], index[:, i, 1]), (225, 0, 26, 0))
-        # print(sum_b/len(index))
-        # print(sum_g/len(index))
-        # print(sum_r/len(index))
-        # sys.exit()
-        splash = color_splash(image, r['masks'], fill)
-        # Save output
-        # splash = image.convert('RGB')
-        file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
-        skimage.io.imsave(file_name, splash)
+            # print(image_origin[0][y, x])
+            sum_b += image_sync[y, x][0]
+            sum_g += image_sync[y, x][1]
+            sum_r += image_sync[y, x][2]
+            if image_sync[y, x][0] > 170 and \
+                    image_sync[y, x][1] < 100 and \
+                    10 < image_sync[y, x][2] < 100:
+                pass
+            else:
+                image_sync[y, x] = [sum_b / (i + 1), sum_g / (i + 1), sum_r / (i + 1)]
+        # file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
+        # print(file_name)
+        # skimage.io.imsave(file_name, image_sync)
+        return image_sync
     elif video_path:
         import cv2
         # Video capture
@@ -355,98 +351,139 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
 #  Training
 ############################################################
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
+#     import argparse
+#
+#     # Parse command line arguments
+#     parser = argparse.ArgumentParser(
+#         description='Train Mask R-CNN to detect logos.')
+#     parser.add_argument("command",
+#                         metavar="<command>",
+#                         help="'train' or 'splash'")
+#     parser.add_argument('--dataset', required=False,
+#                         metavar="/path/to/logo/dataset/",
+#                         help='Directory of the logo dataset')
+#     parser.add_argument('--weights', required=True,
+#                         metavar="/path/to/weights.h5",
+#                         help="Path to weights .h5 file or 'coco'")
+#     parser.add_argument('--logs', required=False,
+#                         default=DEFAULT_LOGS_DIR,
+#                         metavar="/path/to/logs/",
+#                         help='Logs and checkpoints directory (default=logs/)')
+#     parser.add_argument('--image', required=False,
+#                         metavar="path or URL to image",
+#                         help='Image to apply the color splash effect on')
+#     parser.add_argument('--video', required=False,
+#                         metavar="path or URL to video",
+#                         help='Video to apply the color splash effect on')
+#     args = parser.parse_args()
+#
+#     # Validate arguments
+#     if args.command == "train":
+#         assert args.dataset, "Argument --dataset is required for training"
+#     elif args.command == "splash":
+#         assert args.image or args.video, \
+#             "Provide --image or --video to apply color splash"
+#
+#     print("Weights: ", args.weights)
+#     print("Dataset: ", args.dataset)
+#     print("Logs: ", args.logs)
+#
+#     # Configurations
+#     if args.command == "train":
+#         config = LogoConfig()
+#     else:
+#         class InferenceConfig(LogoConfig):
+#             # Set batch size to 1 since we'll be running inference on
+#             # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
+#             GPU_COUNT = 1
+#             IMAGES_PER_GPU = 1
+#
+#
+#         config = InferenceConfig()
+#     config.display()
+#
+#     # Create model
+#     if args.command == "train":
+#         model = modellib.MaskRCNN(mode="training", config=config,
+#                                   model_dir=args.logs)
+#     else:
+#         model = modellib.MaskRCNN(mode="inference", config=config,
+#                                   model_dir=args.logs)
+#
+#     # Select weights file to load
+#     if args.weights.lower() == "coco":
+#         weights_path = COCO_WEIGHTS_PATH
+#         # Download weights file
+#         if not os.path.exists(weights_path):
+#             utils.download_trained_weights(weights_path)
+#     elif args.weights.lower() == "last":
+#         # Find last trained weights
+#         weights_path = model.find_last()
+#     elif args.weights.lower() == "imagenet":
+#         # Start from ImageNet trained weights
+#         weights_path = model.get_imagenet_weights()
+#     else:
+#         weights_path = args.weights
+#
+#     # Load weights
+#     print("Loading weights ", weights_path)
+#     if args.weights.lower() == "coco":
+#         # Exclude the last layers because they require a matching
+#         # number of classes
+#         model.load_weights(weights_path, by_name=True, exclude=[
+#             "mrcnn_class_logits", "mrcnn_bbox_fc",
+#             "mrcnn_bbox", "mrcnn_mask"])
+#     else:
+#         model.load_weights(weights_path, by_name=True)
+#
+#     # Train or evaluate
+#     if args.command == "train":
+#         train(model)
+#     elif args.command == "splash":
+#         print(datetime.datetime.now())
+#         detect_and_color_splash(model, image_path=args.image,
+#                                 video_path=args.video)
+#         print(datetime.datetime.now())
+#     else:
+#         print("'{}' is not recognized. "
+#               "Use 'train' or 'splash'".format(args.command))
+
+
+def test_process():
     import argparse
 
-    # Parse command line arguments
     parser = argparse.ArgumentParser(
-        description='Train Mask R-CNN to detect logos.')
-    parser.add_argument("command",
-                        metavar="<command>",
-                        help="'train' or 'splash'")
-    parser.add_argument('--dataset', required=False,
-                        metavar="/path/to/logo/dataset/",
-                        help='Directory of the logo dataset')
-    parser.add_argument('--weights', required=True,
-                        metavar="/path/to/weights.h5",
-                        help="Path to weights .h5 file or 'coco'")
+        description='Train Mask R-CNN to detect tvs.')
     parser.add_argument('--logs', required=False,
                         default=DEFAULT_LOGS_DIR,
                         metavar="/path/to/logs/",
                         help='Logs and checkpoints directory (default=logs/)')
-    parser.add_argument('--image', required=False,
-                        metavar="path or URL to image",
-                        help='Image to apply the color splash effect on')
-    parser.add_argument('--video', required=False,
-                        metavar="path or URL to video",
-                        help='Video to apply the color splash effect on')
     args = parser.parse_args()
 
-    # Validate arguments
-    if args.command == "train":
-        assert args.dataset, "Argument --dataset is required for training"
-    elif args.command == "splash":
-        assert args.image or args.video, \
-            "Provide --image or --video to apply color splash"
-
-    print("Weights: ", args.weights)
-    print("Dataset: ", args.dataset)
-    print("Logs: ", args.logs)
-
-    # Configurations
-    if args.command == "train":
-        config = LogoConfig()
-    else:
-        class InferenceConfig(LogoConfig):
-            # Set batch size to 1 since we'll be running inference on
-            # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
-            GPU_COUNT = 1
-            IMAGES_PER_GPU = 1
-
-
-        config = InferenceConfig()
+    class InferenceConfig(LogoConfig):
+        # Set batch size to 1 since we'll be running inference on
+        # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
+        GPU_COUNT = 1
+        IMAGES_PER_GPU = 1
+        WEIGHT_PATH = '/data/joash/Mask_RCNN/logs/logo20191129T1451/mask_rcnn_logo_0030.h5'
+        IMG_PATH_ORIGIN = '/data/joash/Mask_RCNN/images/origin/'
+        IMG_PATH_SYNC = '/data/joash/Mask_RCNN/images/sync/'
+    config = InferenceConfig()
     config.display()
+    model = modellib.MaskRCNN(mode="inference", config=config, model_dir=args.logs)
+    model.load_weights(config.WEIGHT_PATH, by_name=True)
+    image_origin = io.ImageCollection(str(config.IMG_PATH_ORIGIN + '/*'))
+    image_sync = io.ImageCollection(str(config.IMG_PATH_SYNC + '/*'))
+    print(image_origin.files)
+    print(image_sync.files)
+    # print(image_sync.files[0])
+    # sys.exit()
+    # for f in os.listdir(config.IMG_PATH):
+    for i in range(len(image_origin)):
+    # for i in range(10):
+        image_sync_res = detect_and_color_splash(model, image_origin=[image_origin[i]], image_sync=image_sync[i])
+        skimage.io.imsave(image_sync.files[i], image_sync_res)
 
-    # Create model
-    if args.command == "train":
-        model = modellib.MaskRCNN(mode="training", config=config,
-                                  model_dir=args.logs)
-    else:
-        model = modellib.MaskRCNN(mode="inference", config=config,
-                                  model_dir=args.logs)
-
-    # Select weights file to load
-    if args.weights.lower() == "coco":
-        weights_path = COCO_WEIGHTS_PATH
-        # Download weights file
-        if not os.path.exists(weights_path):
-            utils.download_trained_weights(weights_path)
-    elif args.weights.lower() == "last":
-        # Find last trained weights
-        weights_path = model.find_last()
-    elif args.weights.lower() == "imagenet":
-        # Start from ImageNet trained weights
-        weights_path = model.get_imagenet_weights()
-    else:
-        weights_path = args.weights
-
-    # Load weights
-    print("Loading weights ", weights_path)
-    if args.weights.lower() == "coco":
-        # Exclude the last layers because they require a matching
-        # number of classes
-        model.load_weights(weights_path, by_name=True, exclude=[
-            "mrcnn_class_logits", "mrcnn_bbox_fc",
-            "mrcnn_bbox", "mrcnn_mask"])
-    else:
-        model.load_weights(weights_path, by_name=True)
-
-    # Train or evaluate
-    if args.command == "train":
-        train(model)
-    elif args.command == "splash":
-        detect_and_color_splash(model, image_path=args.image,
-                                video_path=args.video)
-    else:
-        print("'{}' is not recognized. "
-              "Use 'train' or 'splash'".format(args.command))
+if __name__ == '__main__':
+    test_process()
