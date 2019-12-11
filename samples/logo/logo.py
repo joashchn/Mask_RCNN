@@ -224,7 +224,7 @@ def train(model):
                 layers='heads')
 
 
-def color_splash(image, mask):
+def color_splash(image, mask, fill):
     """Apply color splash effect.
     image: RGB image [height, width, 3]
     mask: instance segmentation mask [height, width, instance count]
@@ -234,13 +234,14 @@ def color_splash(image, mask):
     # Make a grayscale copy of the image. The grayscale copy still
     # has 3 RGB channels, though.
     gray = skimage.color.gray2rgb(skimage.color.rgb2gray(image)) * 255
-    print(gray)
-    red = [255, 0, 12]
+    # print(gray)
+    # red = [255, 0, 12]
+    print(fill)
     # Copy color pixels from the original color image where mask is set
     if mask.shape[-1] > 0:
         # We're treating all instances as one, so collapse the mask into one layer
         mask = (np.sum(mask, -1, keepdims=True) >= 1)
-        splash = np.where(mask, red, image).astype(np.uint8)
+        splash = np.where(mask, fill, image).astype(np.uint8)
     else:
         splash = gray.astype(np.uint8)
     return splash
@@ -260,7 +261,6 @@ def color_splash2(image, mask):
     if mask.shape[-1] > 0:
         # We're treating all instances as one, so collapse the mask into one layer
         mask = (np.sum(mask, -1, keepdims=True) >= 1)
-        print(mask)
         splash = np.where(mask, image, gray).astype(np.uint8)
     else:
         splash = image.astype(np.uint8)
@@ -279,15 +279,38 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
         # image = Image.open(args.image)
         # Detect objects
         r = model.detect([image], verbose=1)[0]
+        image = skimage.io.imread('/data/joash/Mask_RCNN/images/logo/val/1_437647_2.jpg')
         # Color splash
-        # index = np.argwhere(r['masks'] == True)
+        # print(r)
+        index = np.argwhere(r['masks'] == True)
         # print(index)
         # # print(image[])
-        # for i in range(len(index)):
-        #     image(index[:, i, 0], index[:, i, 1])
-        #     image.putpixel((index[:, i, 0], index[:, i, 1]), (225, 0, 26, 0))
+        sum_b = 0
+        sum_g = 0
+        sum_r = 0
+        for i in range(len(index)):
+            x = index[i][1]
+            y = index[i][0]
+            # print(x)
+            # print(y)
+            # print(image)
+            # print(image.shape)
+            # print(type(image))
+            sum_b += image[y, x][0]
+            sum_g += image[y, x][1]
+            sum_r += image[y, x][2]
+        print(sum_b/len(index))
+        print(sum_g/len(index))
+        print(sum_r/len(index))
+        fill = [sum_b/len(index), sum_g/len(index), sum_r/len(index)]
+        #     sum_g += index[:, i, 1]
+        #     sum_r += index[:, i, 2]
+        #     # image.putpixel((index[:, i, 0], index[:, i, 1]), (225, 0, 26, 0))
+        # print(sum_b/len(index))
+        # print(sum_g/len(index))
+        # print(sum_r/len(index))
         # sys.exit()
-        splash = color_splash2(image, r['masks'])
+        splash = color_splash(image, r['masks'], fill)
         # Save output
         # splash = image.convert('RGB')
         file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
@@ -427,11 +450,3 @@ if __name__ == '__main__':
     else:
         print("'{}' is not recognized. "
               "Use 'train' or 'splash'".format(args.command))
-
-
-'''
- image_ = skimage.io.ImageCollection(str(config.IMG_PATH + '/*.jpg'))
-    # image_ = skimage.io.imread(config.IMG_PATH + '/*.png')
-    for f in range(len(image_)):
-
-'''
